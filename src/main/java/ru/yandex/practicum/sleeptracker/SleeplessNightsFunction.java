@@ -9,30 +9,33 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SleeplessNightsFunction implements Function<List<SleepingSession>, SleepAnalysisResult> {
+
+    public static final String DESCRIPTION = "Количество бессонных ночей";
+
     @Override
     public SleepAnalysisResult apply(List<SleepingSession> sessions) {
         if (sessions.isEmpty()) {
-            return new SleepAnalysisResult("Количество бессонных ночей", 0L);
+            return new SleepAnalysisResult(DESCRIPTION, 0L);
         }
 
         Set<LocalDate> nightsWithSleep = sessions.stream()
                 .filter(SleepingSession::intersectsNightInterval)
-                .map(session -> session.getStartTime().toLocalDate())
+                .map(SleepingSession::getNightDate)
                 .collect(Collectors.toSet());
 
-        LocalDate firstDate = sessions.stream()
-                .map(session -> session.getStartTime().toLocalDate())
+        LocalDate firstNight = sessions.stream()
+                .map(SleepingSession::getNightDate)
                 .min(Comparator.naturalOrder())
                 .orElse(LocalDate.now());
 
-        LocalDate lastDate = sessions.stream()
-                .map(session -> session.getStartTime().toLocalDate())
+        LocalDate lastNight = sessions.stream()
+                .map(SleepingSession::getNightDate)
                 .max(Comparator.naturalOrder())
                 .orElse(LocalDate.now());
 
-        long totalNights = ChronoUnit.DAYS.between(firstDate, lastDate) + 1;
+        long totalNights = ChronoUnit.DAYS.between(firstNight, lastNight) + 1;
         long sleeplessNights = totalNights - nightsWithSleep.size();
 
-        return new SleepAnalysisResult("Количество бессонных ночей", Math.max(0L, sleeplessNights));
+        return new SleepAnalysisResult(DESCRIPTION, Math.max(0L, sleeplessNights));
     }
 }

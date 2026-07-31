@@ -1,11 +1,22 @@
 package ru.yandex.practicum.sleeptracker;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ChronotypeClassifierFunction implements Function<List<SleepingSession>, SleepAnalysisResult> {
+
+    public static final String DESCRIPTION = "Ваш хронотип пользователя";
+
+    private static final LocalTime OWL_SLEEP_LOWER = LocalTime.of(23, 0);
+    private static final LocalTime OWL_SLEEP_UPPER = LocalTime.of(5, 0);
+    private static final LocalTime OWL_WAKE_MIN = LocalTime.of(8, 30);
+
+    private static final LocalTime LARK_SLEEP_MAX = LocalTime.of(22, 0);
+    private static final LocalTime LARK_WAKE_MAX = LocalTime.of(7, 0);
+
     @Override
     public SleepAnalysisResult apply(List<SleepingSession> sessions) {
         Map<Chronotype, Long> counts = sessions.stream()
@@ -26,19 +37,22 @@ public class ChronotypeClassifierFunction implements Function<List<SleepingSessi
             userChronotype = Chronotype.PIGEON;
         }
 
-        return new SleepAnalysisResult("Ваш хронотип пользователя", userChronotype);
+        return new SleepAnalysisResult(DESCRIPTION, userChronotype);
     }
 
     private Chronotype classifySession(SleepingSession s) {
-        int sleepHour = s.getStartTime().getHour();
-        int wakeHour = s.getEndTime().getHour();
+        LocalTime sleepTime = s.getStartTime().toLocalTime();
+        LocalTime wakeTime = s.getEndTime().toLocalTime();
 
-        boolean isOwl = (sleepHour >= 23 || sleepHour < 5) && (wakeHour >= 9);
-        boolean isLark = (sleepHour < 22) && (wakeHour < 7);
+        boolean isOwlSleep = !sleepTime.isBefore(OWL_SLEEP_LOWER) || sleepTime.isBefore(OWL_SLEEP_UPPER);
+        boolean isOwlWake = !wakeTime.isBefore(OWL_WAKE_MIN);
 
-        if (isOwl) {
+        boolean isLarkSleep = sleepTime.isBefore(LARK_SLEEP_MAX);
+        boolean isLarkWake = wakeTime.isBefore(LARK_WAKE_MAX);
+
+        if (isOwlSleep && isOwlWake) {
             return Chronotype.OWL;
-        } else if (isLark) {
+        } else if (isLarkSleep && isLarkWake) {
             return Chronotype.LARK;
         } else {
             return Chronotype.PIGEON;

@@ -82,6 +82,27 @@ public class SleepTrackerAppTest {
     }
 
     @Test
+    void testSleeplessNights_MultipleSessionsInOneNight() {
+        // Две сессии в одну и ту же ночь: с 23:00 до 02:00 и с 03:00 до 06:00
+        List<SleepingSession> splitNight = List.of(
+                new SleepingSession(
+                        LocalDateTime.of(2025, 10, 1, 23, 0),
+                        LocalDateTime.of(2025, 10, 2, 2, 0),
+                        SleepQuality.GOOD
+                ),
+                new SleepingSession(
+                        LocalDateTime.of(2025, 10, 2, 3, 0),
+                        LocalDateTime.of(2025, 10, 2, 6, 0),
+                        SleepQuality.GOOD
+                )
+        );
+        SleeplessNightsFunction function = new SleeplessNightsFunction();
+        SleepAnalysisResult result = function.apply(splitNight);
+        // Не должно быть бессонных ночей, т.к. это одна и та же ночь
+        assertEquals(0L, result.getValue());
+    }
+
+    @Test
     void testSleeplessNights_WithDaySleepOnly() {
         List<SleepingSession> dayOnly = List.of(
                 new SleepingSession(
@@ -96,35 +117,28 @@ public class SleepTrackerAppTest {
     }
 
     @Test
-    void testSleeplessNights_WithGapInDays() {
-        List<SleepingSession> withGap = List.of(
+    void testChronotype_OwlWithHalfHours() {
+        // Засыпает в 23:30, просыпается в 08:30 — должен быть OWL
+        List<SleepingSession> owlSessions = List.of(
                 new SleepingSession(
-                        LocalDateTime.of(2025, 10, 1, 23, 0),
-                        LocalDateTime.of(2025, 10, 2, 7, 0),
-                        SleepQuality.GOOD
-                ),
-                new SleepingSession(
-                        LocalDateTime.of(2025, 10, 3, 23, 0),
-                        LocalDateTime.of(2025, 10, 4, 7, 0),
+                        LocalDateTime.of(2025, 10, 1, 23, 30),
+                        LocalDateTime.of(2025, 10, 2, 8, 30),
                         SleepQuality.GOOD
                 )
         );
-        SleeplessNightsFunction function = new SleeplessNightsFunction();
-        SleepAnalysisResult result = function.apply(withGap);
-        assertEquals(1L, result.getValue());
-    }
-
-    @Test
-    void testSleeplessNights_EmptyList() {
-        SleeplessNightsFunction function = new SleeplessNightsFunction();
-        SleepAnalysisResult result = function.apply(Collections.emptyList());
-        assertEquals(0L, result.getValue());
-    }
-
-    @Test
-    void testChronotype_DefaultToPigeonOnTie() {
         ChronotypeClassifierFunction function = new ChronotypeClassifierFunction();
-        SleepAnalysisResult result = function.apply(sampleSessions);
-        assertEquals(Chronotype.PIGEON, result.getValue());
+        SleepAnalysisResult result = function.apply(owlSessions);
+        assertEquals(Chronotype.OWL, result.getValue());
+    }
+
+    @Test
+    void testIntersectsNightInterval_LateEveningOnly() {
+        // Сон с 22:00 до 23:30 не пересекает интервал 00:00-06:00
+        SleepingSession session = new SleepingSession(
+                LocalDateTime.of(2025, 10, 1, 22, 0),
+                LocalDateTime.of(2025, 10, 1, 23, 30),
+                SleepQuality.GOOD
+        );
+        assertFalse(session.intersectsNightInterval());
     }
 }

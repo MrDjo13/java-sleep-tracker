@@ -1,6 +1,7 @@
 package ru.yandex.practicum.sleeptracker;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class SleepingSession {
@@ -31,9 +32,24 @@ public class SleepingSession {
     }
 
     public boolean intersectsNightInterval() {
-        int startHour = startTime.getHour();
-        int endHour = endTime.getHour();
+        LocalDateTime nightStart = startTime.toLocalDate().atStartOfDay();
+        LocalDateTime nightEnd = nightStart.plusHours(6);
 
-        return startHour >= 22 || startHour < 6 || endHour < 6 || !startTime.toLocalDate().equals(endTime.toLocalDate());
+        LocalDateTime nextNightStart = nightStart.plusDays(1);
+        LocalDateTime nextNightEnd = nextNightStart.plusHours(6);
+
+        boolean intersectsFirstNight = startTime.isBefore(nightEnd) && endTime.isAfter(nightStart);
+        boolean intersectsNextNight = startTime.isBefore(nextNightEnd) && endTime.isAfter(nextNightStart);
+
+        return intersectsFirstNight || intersectsNextNight;
+    }
+
+    public LocalDate getNightDate() {
+        LocalDateTime nightEndLimit = startTime.toLocalDate().atStartOfDay().plusHours(6);
+        if (startTime.isBefore(nightEndLimit)) {
+            return startTime.toLocalDate();
+        } else {
+            return startTime.toLocalDate().plusDays(1);
+        }
     }
 }
